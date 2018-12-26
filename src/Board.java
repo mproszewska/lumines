@@ -1,6 +1,6 @@
 public class Board {
     /*board of 12 x 16 cells
-    * rows 0,1 are where square appears */
+     * rows 0,1 are where square appears */
     private Cell[][] board = new Cell[12][16];
     Board(){
         for(int i = 0;i < 12; i++)
@@ -21,7 +21,7 @@ public class Board {
 
     void downSquare(Square currentSquare) {
         /* move square as low as possible, you can divide square in half
-        * */
+         * */
         int row = currentSquare.getRow()+2;
         int column = currentSquare.getColumn();
         while(canMove(row,column)) row++;

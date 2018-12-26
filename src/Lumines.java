@@ -1,9 +1,7 @@
-import javax.security.auth.login.AccountExpiredException;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,13 +11,12 @@ public class Lumines extends JFrame {
     private final int SQUARE_WIDTH = 20; // width of one block (in pixels)
     private final int BOARD_WIDTH = 16; // width of the board in blocks
     private final int BOARD_HEIGHT = 12; // height of the board in blocks
-    private final int FRAME_RATE = 6; // frames per second
+    private final int FRAME_RATE = 4; // frames per second
 
     private Keyboard keyboard = new Keyboard(this);
     private Board board; // grid 12x16 of cells
     private Square currentSquare; // block 2x2 of cells
     private Line line; // line that clears matched cells
-    private long startTime; // time the new game started
     private int score = 0; // current score
     private boolean pause = false; // game paused
     private int highestScore = 0; // highest score
@@ -27,6 +24,7 @@ public class Lumines extends JFrame {
     private long ticks = 0;
     private boolean help = false;
     private boolean gameover = false;
+    private List<Long> times = new ArrayList<>();
 
     private JPanel titlePanel; // title
     private JPanel scorePanel; // score
@@ -52,7 +50,7 @@ public class Lumines extends JFrame {
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(Toolkit.getDefaultToolkit().getImage("img/logo.jpg"),170,20,this);
+                g.drawImage(Toolkit.getDefaultToolkit().getImage("img/logo.jpg"),210,20,this);
             }
         };
 
@@ -122,7 +120,7 @@ public class Lumines extends JFrame {
             @Override
             public void paintComponent(Graphics g) {
                 super.paintComponent(g);
-                g.drawImage(Toolkit.getDefaultToolkit().getImage("img/help.jpg"),100,0,this);
+                g.drawImage(Toolkit.getDefaultToolkit().getImage("img/help.jpg"),110,10,this);
             }
         };
         instructionPanel.setOpaque(true);
@@ -135,11 +133,9 @@ public class Lumines extends JFrame {
     }
 
     public void tick(){
-        int row = currentSquare.getRow();
-        int column = currentSquare.getColumn();
-        boolean newSquare = false;
         int key = keyboard.getKeyPressed();
         if(gameover && key!=0){
+            times.add(System.currentTimeMillis());
             gameover = false;
             pause = false;
             keyboard.reset();
@@ -148,24 +144,28 @@ public class Lumines extends JFrame {
         switch (key){
             case KeyEvent.VK_P:
                 pause = !pause;
+                times.add(System.currentTimeMillis());
                 break;
             case KeyEvent.VK_Q:
                 this.dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING));
             case KeyEvent.VK_H:
+                times.add(System.currentTimeMillis());
                 help = !help;
         }
         if (!start) {
             ticks++;
-            if (key == KeyEvent.VK_S){
+            if (key == KeyEvent.VK_S) {
                 start = true;
-                keyboard.reset();
-                return;
+                times.add(System.currentTimeMillis());
             }
-            else{
-                keyboard.reset();
-                return;
-            }
+            keyboard.reset();
+            return;
         }
+
+        int row = currentSquare.getRow();
+        int column = currentSquare.getColumn();
+        boolean newSquare = false;
+
         if(!pause && !help && !gameover) {
             switch (key) {
                 case KeyEvent.VK_UP:
@@ -189,11 +189,13 @@ public class Lumines extends JFrame {
         keyboard.reset();
         if(pause || help || gameover) return;
         matchSquares();
+
         line.move();
         if((line.getX()/20)-1==16) line.reset();
         if(line.getX()>0 && line.getX()%20==0){
             doClear((line.getX()/20)-1);
         }
+
         if(!newSquare && board.canMove(currentSquare.getRow()+2,currentSquare.getColumn()) && board.canMove(currentSquare.getRow()+2,currentSquare.getColumn()+1)){
             if(!currentSquare.moveDown()) newSquare = true;
         }
@@ -214,7 +216,6 @@ public class Lumines extends JFrame {
         for(int i=2;i<11;i++){
             for(int j=0;j<15;j++){
                 Cell cell = board.getCell(i,j);
-
                 if(cell.equalColor(board.getCell(i,j+1)) && cell.equalColor(board.getCell(i+1,j))
                         && cell.equalColor(board.getCell(i+1,j+1))) {
                     board.setCell(i, j, cell.match());
@@ -247,8 +248,8 @@ public class Lumines extends JFrame {
 
     private void draw(){
         //Area around the grid to make room for new pieces
-        int xPlus = SQUARE_WIDTH * 2;
-        int yPlus = SQUARE_WIDTH * 2;
+        int moveX = SQUARE_WIDTH * 2;
+        int moveY = SQUARE_WIDTH * 2;
 
         BufferedImage gridImage = new BufferedImage( luminesGrid.getWidth(), luminesGrid.getHeight(), BufferedImage.TYPE_INT_RGB );
         Graphics grid = gridImage.getGraphics();
@@ -260,31 +261,35 @@ public class Lumines extends JFrame {
         gridPanel.setColor( Color.black );
         gridPanel.clearRect( 0, 0, gridPanelImage.getWidth(), gridPanelImage.getHeight() );
 
-
         addSquareToBoard(currentSquare);
 
         for( int i = 0; i < BOARD_HEIGHT; i++ ) {
             for (int j = 0; j < BOARD_WIDTH; j++) {
                 grid.setColor(new Color(0, 0, 0));
                 grid.drawRect((j * SQUARE_WIDTH), (i * SQUARE_WIDTH), SQUARE_WIDTH, SQUARE_WIDTH);
-                if (board.getCell(i, j) == Cell.EMPTY) {
-                    grid.setColor(new Color(0, 0, 0));
-                    grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
-                } else if (board.getCell(i, j) == Cell.COLOR_ONE ) {
-                    grid.setColor(new Color(255, 63, 47));
-                    grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
-                }else if (board.getCell(i, j) == Cell.COLOR_ONE_MATCHED) {
-                    grid.setColor(new Color(189, 36, 33));
-                    grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
-                } else if (board.getCell(i, j) == Cell.COLOR_TWO ) {
-                    grid.setColor(new Color(19, 112, 184));
-                    grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                switch (board.getCell(i, j)) {
+                    case EMPTY:
+                        grid.setColor(new Color(0, 0, 0));
+                        grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                        break;
+                    case COLOR_ONE:
+                        grid.setColor(new Color(255, 63, 47));
+                        grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                        break;
+                    case COLOR_TWO:
+                        grid.setColor(new Color(19, 112, 184));
+                        grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                        break;
+                    case COLOR_ONE_MATCHED:
+                        grid.setColor(new Color(189, 36, 33));
+                        grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                        break;
+                    case COLOR_TWO_MATCHED:
+                        grid.setColor(new Color(13, 68, 112));
+                        grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
+                        break;
                 }
-                else if (board.getCell(i, j) == Cell.COLOR_TWO_MATCHED) {
-                    grid.setColor(new Color(13, 68, 112));
-                    grid.fillRect(1 + (j * SQUARE_WIDTH), 1 + (i * SQUARE_WIDTH), SQUARE_WIDTH - 1, SQUARE_WIDTH - 1);
-                }
-                }
+            }
         }
         if(!start && !help && ticks%3==1){
             grid.drawImage(Toolkit.getDefaultToolkit().getImage("img/press.jpg"),10,90,null);
@@ -297,15 +302,61 @@ public class Lumines extends JFrame {
         }
         // board frame
         grid.setColor(new Color(255,255,255));
-        grid.drawLine(0,40,20*16,40);
-        grid.drawLine(0,12*20,16*20,12*20);
-        grid.drawLine(16*20,40,16*20,240);
-        grid.drawLine(0,40,0,240);
+        grid.drawRect(0,40,20*16,12*20-40);
+
         if(line.getX()<20*16) grid.drawLine(line.getX(),40,line.getX(),240);
         if(line.getX()>20) grid.drawLine(line.getX()-20,40,line.getX()-20,240);
         addSquareToBoard(Square.emptySquare(currentSquare.getRow(),currentSquare.getColumn()));
-        gridPanel.drawImage( gridImage, xPlus, yPlus, this );
+        gridPanel.drawImage( gridImage, moveX, moveY, this );
         luminesGrid.getGraphics().drawImage( gridPanelImage, 0, 0, this );
+
+        updateStats();
+
+    }
+
+    private void updateStats() {
+        // Stats
+        BufferedImage scorePanelImage = new BufferedImage( scorePanel.getWidth(),scorePanel.getHeight(), BufferedImage.TYPE_INT_RGB );
+        Graphics scoreGraphicsPanel = scorePanelImage.getGraphics();
+        String stringScore = String.valueOf(this.score);
+
+        for(int i=0;i<stringScore.length();i++){
+            scoreGraphicsPanel.drawImage(Toolkit.getDefaultToolkit().getImage("img/"+stringScore.charAt(i)+".jpg"),12*i,0,null);
+        }
+        scorePanel.getGraphics().drawImage(scorePanelImage,5,30,this);
+
+        BufferedImage highscorePanelImage = new BufferedImage(highestScorePanel.getWidth(),highestScorePanel.getHeight(),BufferedImage.TYPE_INT_RGB);
+        Graphics highscoreGraphicsPanel = highscorePanelImage.getGraphics();
+        String stringHighscore = String.valueOf(this.highestScore);
+
+        for(int i=0;i<stringHighscore.length();i++){
+            highscoreGraphicsPanel.drawImage(Toolkit.getDefaultToolkit().getImage("img/"+stringHighscore.charAt(i)+".jpg"),12*i,0,null);
+        }
+        highestScorePanel.getGraphics().drawImage(highscorePanelImage,5,30,this);
+
+        String stringTime = String.valueOf(getTime());
+        BufferedImage timeImage = new BufferedImage(timePanel.getWidth(),timePanel.getHeight(),BufferedImage.TYPE_INT_RGB);
+        Graphics timeGraphics = timeImage.getGraphics();
+
+        for(int i=0;i<stringTime.length();i++){
+            timeGraphics.drawImage(Toolkit.getDefaultToolkit().getImage("img/"+stringTime.charAt(i)+".jpg"),12*i,0,null);
+        }
+        timePanel.getGraphics().drawImage(timeImage,5,30,this);
+    }
+
+    private long getTime() {
+        // caluculates time based on
+        long result = 0;
+        boolean added = false;
+        if(times.size()%2==1){
+            added = true;
+            times.add(System.currentTimeMillis());
+        }
+        for(int i=0;i<times.size();i+=2){
+            result += (times.get(i+1)-times.get(i));
+        }
+        if(added) times.remove(times.size()-1);
+        return  result/1000;
     }
 
     private void addSquareToBoard(Square currentSquare) {
@@ -321,11 +372,11 @@ public class Lumines extends JFrame {
 
     public void newGame(){
         if(highestScore < score) highestScore = score;
+        times.clear();
         board = new Board();
         currentSquare = new Square();
         line = new Line();
         score = 0;
-        startTime = System.currentTimeMillis();
     }
 
     public void run() throws InterruptedException{
@@ -346,7 +397,4 @@ public class Lumines extends JFrame {
         game.run();
     }
 
-    public void resume() {
-        pause = false;
-    }
 }
