@@ -1,18 +1,18 @@
-public class Line {
+class Line {
     // vertical that clears cells
     private int x;
     private int speed;
-    public Line(){
+    Line(){
         x = 0;
         speed = 5;
     }
-    public void move(){
+    void move(){
         x += speed;
     }
-    public void reset(){
+    void reset(){
         x = 0;
     }
-    public int getX(){
+    int getX(){
         return x;
     }
 }

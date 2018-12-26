@@ -1,4 +1,4 @@
-public class Board {
+class Board {
     /*board of 12 x 16 cells
      * rows 0,1 are where square appears */
     private Cell[][] board = new Cell[12][16];

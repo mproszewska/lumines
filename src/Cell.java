@@ -11,12 +11,7 @@ public enum Cell {
             default: return this;
         }
     }
-    public boolean isColorOne(){
-        return this == COLOR_ONE || this == COLOR_ONE_MATCHED ;
-    }
-    public boolean isColorTwo(){
-        return this == COLOR_TWO || this == COLOR_TWO_MATCHED;
-    }
+
     public boolean isMatched(){
         return this == COLOR_ONE_MATCHED || this == COLOR_TWO_MATCHED;
     }

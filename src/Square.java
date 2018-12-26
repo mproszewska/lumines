@@ -1,14 +1,14 @@
 import java.util.Random;
 import java.util.stream.IntStream;
 
-public class Square {
+class Square {
     // block of 2x2 cells
     private Cell[][] cells = new Cell[2][2];
     private int row; // row of cell [0][0]
     private int column; // column of cell [0][0]
     private long lastChange;
 
-    public Square(){
+    Square(){
         Random random = new Random();
         for(int i = 0; i < 2; i++)
             for (int j = 0; j < 2; j++) cells[i][j] = Cell.values()[random.nextInt(2) + 1];

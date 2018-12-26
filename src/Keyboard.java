@@ -6,17 +6,17 @@ public class Keyboard implements KeyListener {
     private int keyPressed;
     private long lastChange;
 
-    public Keyboard(Component component){
+    Keyboard(Component component){
         component.addKeyListener(this);
         this.keyPressed = 0;
         lastChange = 0;
     }
 
-    public int getKeyPressed() {
+    int getKeyPressed() {
         return keyPressed;
     }
 
-    public void reset(){
+    void reset(){
         keyPressed = 0;
     }
 
